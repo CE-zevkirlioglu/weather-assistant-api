@@ -83,12 +83,12 @@ def build_recommendations(prediction: Dict) -> Tuple[str, list]:
     pleasant_active = not any(flags.values())
 
     templates = [
-        ("hot", "Hava cok sicak, ince giyin."),
-        ("cold", "Hava cok soguk, kalin giyin."),
-        ("uv_high", "UV cok fazla, gunes kremi surun."),
-        ("windy", "Hava cok ruzgarli, kapsonlu giyin."),
-        ("rain", "Hava yagmurlu, semsiye almayi unutmayin."),
-        ("pleasant", "Hava durumu oldukca guzel, tadini cikar."),
+        ("hot", "Hava çok sıcak! Hafif ve nefes alabilen kıyafetler tercih edin, bol su tüketmeyi unutmayın."),
+        ("cold", "Hava oldukça soğuk. Kalın giysiler giyin ve vücut sıcaklığınızı korumaya dikkat edin."),
+        ("uv_high", "UV indeksi yüksek! Güneş kremi kullanmayı ve şapka takmayı unutmayın. Öğle saatlerinde güneşten kaçının."),
+        ("windy", "Rüzgar oldukça kuvvetli. Kapşonlu veya rüzgar geçirmeyen kıyafetler tercih edin."),
+        ("rain", "Yağmur bekleniyor! Yanınıza şemsiye almayı ve su geçirmez kıyafetler giymeyi unutmayın."),
+        ("pleasant", "Hava durumu harika! Dışarıda vakit geçirmek için mükemmel bir gün. Keyfini çıkarın!"),
     ]
 
     recommendations = []

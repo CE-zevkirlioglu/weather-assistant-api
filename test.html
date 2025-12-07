@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Assistant API Test</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -11,163 +14,244 @@
             box-sizing: border-box;
         }
         
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --success-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --glass-bg: rgba(255, 255, 255, 0.25);
+            --glass-border: rgba(255, 255, 255, 0.18);
+            --shadow-lg: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
             min-height: 100vh;
             padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+            pointer-events: none;
         }
         
         .container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 600px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 48px;
+            max-width: 700px;
             width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--glass-border);
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
         }
         
         h1 {
-            color: #333;
-            margin-bottom: 10px;
-            text-align: center;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
         }
         
         .subtitle {
-            color: #666;
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 14px;
+            color: #64748b;
+            font-size: 15px;
+            font-weight: 400;
+            letter-spacing: 0.2px;
         }
         
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            position: relative;
         }
         
         label {
             display: block;
-            margin-bottom: 8px;
-            color: #333;
+            margin-bottom: 10px;
+            color: #1e293b;
             font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            font-size: 12px;
         }
         
-        input {
+        input, select {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
+            padding: 14px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+            color: #1e293b;
         }
         
-        input:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        input:hover, select:hover {
+            border-color: #cbd5e1;
+        }
+        
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 18px center;
+            padding-right: 45px;
         }
         
         .button-group {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 24px;
         }
         
         button {
             flex: 1;
-            padding: 14px;
+            padding: 16px 24px;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 12px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.3px;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        button span {
+            position: relative;
+            z-index: 1;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
         }
         
         .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
+            background: white;
+            color: #475569;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
         
         .btn-secondary:hover {
-            background: #e0e0e0;
-        }
-        
-        .result {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            display: none;
-        }
-        
-        .result.show {
-            display: block;
-        }
-        
-        .result h2 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 20px;
-        }
-        
-        .summary {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border-left: 4px solid #667eea;
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .recommendations {
-            margin-top: 15px;
-        }
-        
-        .recommendation {
-            background: white;
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            border-left: 4px solid #28a745;
-        }
-        
-        .recommendation.inactive {
-            opacity: 0.5;
-            border-left-color: #ccc;
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         
         .loading {
             text-align: center;
-            padding: 20px;
+            padding: 40px 20px;
             display: none;
         }
         
         .loading.show {
             display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border: 4px solid rgba(102, 126, 234, 0.1);
+            border-top: 4px solid #667eea;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
+            margin: 0 auto 16px;
         }
         
         @keyframes spin {
@@ -175,62 +259,458 @@
             100% { transform: rotate(360deg); }
         }
         
-        .error {
-            background: #fee;
-            color: #c33;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #c33;
-            margin-top: 15px;
+        .result {
+            margin-top: 32px;
+            padding: 0;
+            background: transparent;
+            border-radius: 16px;
+            display: none;
+            animation: slideUp 0.4s ease-out;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .result h2 {
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .result h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--primary-gradient);
+            border-radius: 2px;
+        }
+        
+        .summary {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            padding: 20px 24px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+            border-image: var(--primary-gradient) 1;
+            font-size: 17px;
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.6;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
         }
         
         .location-info {
-            background: #e7f3ff;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             font-size: 14px;
-            color: #0066cc;
+            color: #1e40af;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+        }
+        
+        .location-info::before {
+            content: '📍';
+            font-size: 20px;
+        }
+        
+        .recommendations {
+            margin-top: 24px;
+        }
+        
+        .recommendations strong {
+            display: block;
+            margin-bottom: 12px;
+            color: #475569;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        
+        .recommendation {
+            background: white;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            border-left: 4px solid #10b981;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .recommendation::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--success-gradient);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .recommendation:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .recommendation:hover::before {
+            transform: scaleY(1);
+        }
+        
+        .recommendation.inactive {
+            opacity: 0.4;
+            border-left-color: #cbd5e1;
+            background: #f8fafc;
+        }
+        
+        .recommendation.inactive:hover {
+            transform: none;
+        }
+        
+        .weather-data {
+            margin-top: 24px;
+            background: linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%);
+            padding: 20px;
+            border-radius: 16px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .weather-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 10px;
+            transition: transform 0.2s ease;
+        }
+        
+        .weather-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .weather-icon {
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 10px;
+        }
+        
+        .weather-value {
+            flex: 1;
+        }
+        
+        .weather-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .weather-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        
+        .error {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+            color: #dc2626;
+            padding: 18px 24px;
+            border-radius: 12px;
+            border-left: 4px solid #ef4444;
+            margin-top: 20px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .error::before {
+            content: '⚠️';
+            font-size: 24px;
+        }
+        
+        @media (max-width: 640px) {
+            .container {
+                padding: 32px 24px;
+                border-radius: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .weather-data {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Selection color */
+        ::selection {
+            background: rgba(102, 126, 234, 0.3);
+            color: #1e293b;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🌤️ Weather Assistant API</h1>
-        <p class="subtitle">Hava durumu tahmini ve önerileri için API test arayüzü</p>
+        <div class="header">
+            <h1>🌤️ Weather Assistant</h1>
+            <p class="subtitle">Akıllı Hava Durumu Tahmin ve Öneri Sistemi</p>
+        </div>
         
         <div class="form-group">
-            <label for="apiUrl">API URL:</label>
+            <label for="apiUrl">🔗 API URL</label>
             <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
         </div>
         
         <div class="form-group">
-            <label for="latitude">Latitude (Enlem):</label>
+            <label for="citySelect">🏙️ Türkiye Şehirleri</label>
+            <select id="citySelect" onchange="selectCity()">
+                <option value="">📍 Manuel koordinat girin</option>
+                <option value="37.0000,35.3213">Adana</option>
+                <option value="37.7636,38.2786">Adıyaman</option>
+                <option value="38.7561,30.5386">Afyonkarahisar</option>
+                <option value="39.7217,43.0567">Ağrı</option>
+                <option value="38.3686,34.0294">Aksaray</option>
+                <option value="40.6533,35.8331">Amasya</option>
+                <option value="39.9334,32.8597">Ankara</option>
+                <option value="36.8969,30.7133">Antalya</option>
+                <option value="41.1106,42.7022">Ardahan</option>
+                <option value="41.1828,41.8183">Artvin</option>
+                <option value="37.8444,27.8458">Aydın</option>
+                <option value="39.6484,27.8826">Balıkesir</option>
+                <option value="41.6350,32.3383">Bartın</option>
+                <option value="37.8812,41.1351">Batman</option>
+                <option value="40.2553,40.2247">Bayburt</option>
+                <option value="40.1428,29.9792">Bilecik</option>
+                <option value="38.8847,40.4981">Bingöl</option>
+                <option value="38.4000,42.1089">Bitlis</option>
+                <option value="40.7397,31.6061">Bolu</option>
+                <option value="36.8841,30.7056">Bursa</option>
+                <option value="37.7203,30.2908">Burdur</option>
+                <option value="40.1553,26.4142">Çanakkale</option>
+                <option value="40.5506,34.9536">Çorum</option>
+                <option value="37.7765,29.0864">Denizli</option>
+                <option value="37.9144,40.2306">Diyarbakır</option>
+                <option value="40.8389,31.1633">Düzce</option>
+                <option value="41.6772,26.5556">Edirne</option>
+                <option value="38.6743,39.2232">Elazığ</option>
+                <option value="39.7500,39.5000">Erzincan</option>
+                <option value="39.9042,41.2679">Erzurum</option>
+                <option value="39.7767,30.5206">Eskişehir</option>
+                <option value="37.0662,37.3833">Gaziantep</option>
+                <option value="40.8028,29.4306">Gebze</option>
+                <option value="40.9128,38.3894">Giresun</option>
+                <option value="40.4603,39.4775">Gümüşhane</option>
+                <option value="37.5744,43.7408">Hakkari</option>
+                <option value="36.4018,36.3498">Hatay</option>
+                <option value="39.9239,44.0447">Iğdır</option>
+                <option value="37.7647,30.5566">Isparta</option>
+                <option value="41.0082,28.9784">İstanbul</option>
+                <option value="38.4192,27.1287">İzmir</option>
+                <option value="40.7656,29.9406">İzmit</option>
+                <option value="37.5858,36.9371">Kahramanmaraş</option>
+                <option value="41.2061,32.6278">Karabük</option>
+                <option value="40.6011,43.0975">Kars</option>
+                <option value="41.3767,33.7767">Kastamonu</option>
+                <option value="38.7312,35.4787">Kayseri</option>
+                <option value="39.8467,33.5153">Kırıkkale</option>
+                <option value="41.7333,27.2167">Kırklareli</option>
+                <option value="39.1467,34.1606">Kırşehir</option>
+                <option value="36.7164,37.1150">Kilis</option>
+                <option value="40.7667,29.9167">Kocaeli</option>
+                <option value="37.8714,32.4844">Konya</option>
+                <option value="39.4167,29.9833">Kütahya</option>
+                <option value="38.3552,38.3095">Malatya</option>
+                <option value="38.6191,27.4289">Manisa</option>
+                <option value="37.3131,40.7436">Mardin</option>
+                <option value="36.8121,34.6415">Mersin</option>
+                <option value="37.2153,28.3636">Muğla</option>
+                <option value="38.7333,41.4911">Muş</option>
+                <option value="38.6244,34.7239">Nevşehir</option>
+                <option value="37.9667,34.6833">Niğde</option>
+                <option value="40.9839,37.8764">Ordu</option>
+                <option value="37.0742,36.2478">Osmaniye</option>
+                <option value="41.0201,40.5234">Rize</option>
+                <option value="40.7569,30.3786">Sakarya</option>
+                <option value="41.2867,36.3300">Samsun</option>
+                <option value="37.1811,38.7903">Şanlıurfa</option>
+                <option value="37.9333,41.9500">Siirt</option>
+                <option value="42.0269,35.1506">Sinop</option>
+                <option value="39.7477,37.0179">Sivas</option>
+                <option value="37.5167,42.4500">Şırnak</option>
+                <option value="40.9833,27.5167">Tekirdağ</option>
+                <option value="40.3139,36.5544">Tokat</option>
+                <option value="41.0015,39.7178">Trabzon</option>
+                <option value="39.1081,39.5481">Tunceli</option>
+                <option value="38.6828,29.4056">Uşak</option>
+                <option value="38.4891,43.4089">Van</option>
+                <option value="39.8208,34.8044">Yozgat</option>
+                <option value="41.4564,31.7987">Zonguldak</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="latitude">🌐 Latitude (Enlem)</label>
             <input type="number" id="latitude" value="41.0082" step="0.0001" placeholder="41.0082">
         </div>
         
         <div class="form-group">
-            <label for="longitude">Longitude (Boylam):</label>
+            <label for="longitude">🌍 Longitude (Boylam)</label>
             <input type="number" id="longitude" value="28.9784" step="0.0001" placeholder="28.9784">
         </div>
         
         <div class="button-group">
-            <button class="btn-primary" onclick="testPredict()">Hava Durumu Tahmini Al</button>
-            <button class="btn-secondary" onclick="testHealth()">Health Check</button>
+            <button class="btn-primary" onclick="testPredict()">
+                <span>✨ Hava Durumu Tahmini Al</span>
+            </button>
+            <button class="btn-secondary" onclick="testHealth()">
+                <span>💚 Health Check</span>
+            </button>
         </div>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p style="margin-top: 10px;">İstek gönderiliyor...</p>
+            <p style="margin-top: 16px; color: #64748b; font-weight: 500;">İstek gönderiliyor...</p>
         </div>
         
         <div class="result" id="result">
-            <h2>Sonuç:</h2>
+            <h2>Sonuç</h2>
             <div id="resultContent"></div>
         </div>
     </div>
     
     <script>
+        // Türkiye şehirleri ve koordinatları (alfabetik sırada)
+        const cities = {
+            '37.0000,35.3213': { name: 'Adana', lat: 37.0000, lon: 35.3213 },
+            '37.7636,38.2786': { name: 'Adıyaman', lat: 37.7636, lon: 38.2786 },
+            '38.7561,30.5386': { name: 'Afyonkarahisar', lat: 38.7561, lon: 30.5386 },
+            '39.7217,43.0567': { name: 'Ağrı', lat: 39.7217, lon: 43.0567 },
+            '38.3686,34.0294': { name: 'Aksaray', lat: 38.3686, lon: 34.0294 },
+            '40.6533,35.8331': { name: 'Amasya', lat: 40.6533, lon: 35.8331 },
+            '39.9334,32.8597': { name: 'Ankara', lat: 39.9334, lon: 32.8597 },
+            '36.8969,30.7133': { name: 'Antalya', lat: 36.8969, lon: 30.7133 },
+            '41.1106,42.7022': { name: 'Ardahan', lat: 41.1106, lon: 42.7022 },
+            '41.1828,41.8183': { name: 'Artvin', lat: 41.1828, lon: 41.8183 },
+            '37.8444,27.8458': { name: 'Aydın', lat: 37.8444, lon: 27.8458 },
+            '39.6484,27.8826': { name: 'Balıkesir', lat: 39.6484, lon: 27.8826 },
+            '41.6350,32.3383': { name: 'Bartın', lat: 41.6350, lon: 32.3383 },
+            '37.8812,41.1351': { name: 'Batman', lat: 37.8812, lon: 41.1351 },
+            '40.2553,40.2247': { name: 'Bayburt', lat: 40.2553, lon: 40.2247 },
+            '40.1428,29.9792': { name: 'Bilecik', lat: 40.1428, lon: 29.9792 },
+            '38.8847,40.4981': { name: 'Bingöl', lat: 38.8847, lon: 40.4981 },
+            '38.4000,42.1089': { name: 'Bitlis', lat: 38.4000, lon: 42.1089 },
+            '40.7397,31.6061': { name: 'Bolu', lat: 40.7397, lon: 31.6061 },
+            '36.8841,30.7056': { name: 'Bursa', lat: 36.8841, lon: 30.7056 },
+            '37.7203,30.2908': { name: 'Burdur', lat: 37.7203, lon: 30.2908 },
+            '40.1553,26.4142': { name: 'Çanakkale', lat: 40.1553, lon: 26.4142 },
+            '40.5506,34.9536': { name: 'Çorum', lat: 40.5506, lon: 34.9536 },
+            '37.7765,29.0864': { name: 'Denizli', lat: 37.7765, lon: 29.0864 },
+            '37.9144,40.2306': { name: 'Diyarbakır', lat: 37.9144, lon: 40.2306 },
+            '40.8389,31.1633': { name: 'Düzce', lat: 40.8389, lon: 31.1633 },
+            '41.6772,26.5556': { name: 'Edirne', lat: 41.6772, lon: 26.5556 },
+            '38.6743,39.2232': { name: 'Elazığ', lat: 38.6743, lon: 39.2232 },
+            '39.7500,39.5000': { name: 'Erzincan', lat: 39.7500, lon: 39.5000 },
+            '39.9042,41.2679': { name: 'Erzurum', lat: 39.9042, lon: 41.2679 },
+            '39.7767,30.5206': { name: 'Eskişehir', lat: 39.7767, lon: 30.5206 },
+            '37.0662,37.3833': { name: 'Gaziantep', lat: 37.0662, lon: 37.3833 },
+            '40.8028,29.4306': { name: 'Gebze', lat: 40.8028, lon: 29.4306 },
+            '40.9128,38.3894': { name: 'Giresun', lat: 40.9128, lon: 38.3894 },
+            '40.4603,39.4775': { name: 'Gümüşhane', lat: 40.4603, lon: 39.4775 },
+            '37.5744,43.7408': { name: 'Hakkari', lat: 37.5744, lon: 43.7408 },
+            '36.4018,36.3498': { name: 'Hatay', lat: 36.4018, lon: 36.3498 },
+            '39.9239,44.0447': { name: 'Iğdır', lat: 39.9239, lon: 44.0447 },
+            '37.7647,30.5566': { name: 'Isparta', lat: 37.7647, lon: 30.5566 },
+            '41.0082,28.9784': { name: 'İstanbul', lat: 41.0082, lon: 28.9784 },
+            '38.4192,27.1287': { name: 'İzmir', lat: 38.4192, lon: 27.1287 },
+            '40.7656,29.9406': { name: 'İzmit', lat: 40.7656, lon: 29.9406 },
+            '37.5858,36.9371': { name: 'Kahramanmaraş', lat: 37.5858, lon: 36.9371 },
+            '41.2061,32.6278': { name: 'Karabük', lat: 41.2061, lon: 32.6278 },
+            '40.6011,43.0975': { name: 'Kars', lat: 40.6011, lon: 43.0975 },
+            '41.3767,33.7767': { name: 'Kastamonu', lat: 41.3767, lon: 33.7767 },
+            '38.7312,35.4787': { name: 'Kayseri', lat: 38.7312, lon: 35.4787 },
+            '39.8467,33.5153': { name: 'Kırıkkale', lat: 39.8467, lon: 33.5153 },
+            '41.7333,27.2167': { name: 'Kırklareli', lat: 41.7333, lon: 27.2167 },
+            '39.1467,34.1606': { name: 'Kırşehir', lat: 39.1467, lon: 34.1606 },
+            '36.7164,37.1150': { name: 'Kilis', lat: 36.7164, lon: 37.1150 },
+            '40.7667,29.9167': { name: 'Kocaeli', lat: 40.7667, lon: 29.9167 },
+            '37.8714,32.4844': { name: 'Konya', lat: 37.8714, lon: 32.4844 },
+            '39.4167,29.9833': { name: 'Kütahya', lat: 39.4167, lon: 29.9833 },
+            '38.3552,38.3095': { name: 'Malatya', lat: 38.3552, lon: 38.3095 },
+            '38.6191,27.4289': { name: 'Manisa', lat: 38.6191, lon: 27.4289 },
+            '37.3131,40.7436': { name: 'Mardin', lat: 37.3131, lon: 40.7436 },
+            '36.8121,34.6415': { name: 'Mersin', lat: 36.8121, lon: 34.6415 },
+            '37.2153,28.3636': { name: 'Muğla', lat: 37.2153, lon: 28.3636 },
+            '38.7333,41.4911': { name: 'Muş', lat: 38.7333, lon: 41.4911 },
+            '38.6244,34.7239': { name: 'Nevşehir', lat: 38.6244, lon: 34.7239 },
+            '37.9667,34.6833': { name: 'Niğde', lat: 37.9667, lon: 34.6833 },
+            '40.9839,37.8764': { name: 'Ordu', lat: 40.9839, lon: 37.8764 },
+            '37.0742,36.2478': { name: 'Osmaniye', lat: 37.0742, lon: 36.2478 },
+            '41.0201,40.5234': { name: 'Rize', lat: 41.0201, lon: 40.5234 },
+            '40.7569,30.3786': { name: 'Sakarya', lat: 40.7569, lon: 30.3786 },
+            '41.2867,36.3300': { name: 'Samsun', lat: 41.2867, lon: 36.3300 },
+            '37.1811,38.7903': { name: 'Şanlıurfa', lat: 37.1811, lon: 38.7903 },
+            '37.9333,41.9500': { name: 'Siirt', lat: 37.9333, lon: 41.9500 },
+            '42.0269,35.1506': { name: 'Sinop', lat: 42.0269, lon: 35.1506 },
+            '39.7477,37.0179': { name: 'Sivas', lat: 39.7477, lon: 37.0179 },
+            '37.5167,42.4500': { name: 'Şırnak', lat: 37.5167, lon: 42.4500 },
+            '40.9833,27.5167': { name: 'Tekirdağ', lat: 40.9833, lon: 27.5167 },
+            '40.3139,36.5544': { name: 'Tokat', lat: 40.3139, lon: 36.5544 },
+            '41.0015,39.7178': { name: 'Trabzon', lat: 41.0015, lon: 39.7178 },
+            '39.1081,39.5481': { name: 'Tunceli', lat: 39.1081, lon: 39.5481 },
+            '38.6828,29.4056': { name: 'Uşak', lat: 38.6828, lon: 29.4056 },
+            '38.4891,43.4089': { name: 'Van', lat: 38.4891, lon: 43.4089 },
+            '39.8208,34.8044': { name: 'Yozgat', lat: 39.8208, lon: 34.8044 },
+            '41.4564,31.7987': { name: 'Zonguldak', lat: 41.4564, lon: 31.7987 }
+        };
+        
+        function selectCity() {
+            const citySelect = document.getElementById('citySelect');
+            const selectedValue = citySelect.value;
+            
+            if (selectedValue && cities[selectedValue]) {
+                const city = cities[selectedValue];
+                document.getElementById('latitude').value = city.lat;
+                document.getElementById('longitude').value = city.lon;
+            }
+        }
+        
         async function testPredict() {
             const apiUrl = document.getElementById('apiUrl').value;
             const lat = parseFloat(document.getElementById('latitude').value);
@@ -308,13 +788,13 @@
                 
                 if (data.meta && data.meta.location_name) {
                     html += `<div class="location-info">
-                        📍 ${data.meta.location_name}, ${data.meta.location_country || ''}
+                        ${data.meta.location_name}, ${data.meta.location_country || ''}
                         ${data.meta.local_time ? '<br>🕐 ' + data.meta.local_time : ''}
                     </div>`;
                 }
                 
                 if (data.recommendations && data.recommendations.length > 0) {
-                    html += '<div class="recommendations"><strong>Öneriler:</strong>';
+                    html += '<div class="recommendations"><strong>💡 Öneriler</strong>';
                     data.recommendations.forEach(rec => {
                         const className = rec.active ? '' : 'inactive';
                         html += `<div class="recommendation ${className}">${rec.message}</div>`;
@@ -323,14 +803,49 @@
                 }
                 
                 if (data.features) {
-                    html += '<div style="margin-top: 15px; font-size: 12px; color: #666;">';
-                    html += '<strong>Hava Durumu Verileri:</strong><br>';
-                    html += `🌡️ Sıcaklık: ${data.features.temp}°C<br>`;
-                    html += `💧 Nem: ${data.features.humidity}%<br>`;
-                    html += `💨 Rüzgar: ${data.features.wind_speed} m/s<br>`;
-                    html += `📊 Basınç: ${data.features.pressure} hPa<br>`;
-                    html += `☁️ Bulutluluk: ${data.features.clouds}%<br>`;
-                    html += `☀️ UV İndeksi: ${data.features.uv_index}`;
+                    html += '<div class="weather-data">';
+                    html += `<div class="weather-item">
+                        <div class="weather-icon">🌡️</div>
+                        <div class="weather-value">
+                            <div class="weather-label">Sıcaklık</div>
+                            <div class="weather-number">${data.features.temp}°C</div>
+                        </div>
+                    </div>`;
+                    html += `<div class="weather-item">
+                        <div class="weather-icon">💧</div>
+                        <div class="weather-value">
+                            <div class="weather-label">Nem</div>
+                            <div class="weather-number">${data.features.humidity}%</div>
+                        </div>
+                    </div>`;
+                    html += `<div class="weather-item">
+                        <div class="weather-icon">💨</div>
+                        <div class="weather-value">
+                            <div class="weather-label">Rüzgar</div>
+                            <div class="weather-number">${data.features.wind_speed} m/s</div>
+                        </div>
+                    </div>`;
+                    html += `<div class="weather-item">
+                        <div class="weather-icon">📊</div>
+                        <div class="weather-value">
+                            <div class="weather-label">Basınç</div>
+                            <div class="weather-number">${data.features.pressure} hPa</div>
+                        </div>
+                    </div>`;
+                    html += `<div class="weather-item">
+                        <div class="weather-icon">☁️</div>
+                        <div class="weather-value">
+                            <div class="weather-label">Bulutluluk</div>
+                            <div class="weather-number">${data.features.clouds}%</div>
+                        </div>
+                    </div>`;
+                    html += `<div class="weather-item">
+                        <div class="weather-icon">☀️</div>
+                        <div class="weather-value">
+                            <div class="weather-label">UV İndeksi</div>
+                            <div class="weather-number">${data.features.uv_index}</div>
+                        </div>
+                    </div>`;
                     html += '</div>';
                 }
             } else {
@@ -341,13 +856,18 @@
             
             contentDiv.innerHTML = html;
             resultDiv.classList.add('show');
+            
+            // Smooth scroll to result
+            setTimeout(() => {
+                resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
         }
         
         function showError(message) {
             const resultDiv = document.getElementById('result');
             const contentDiv = document.getElementById('resultContent');
             
-            contentDiv.innerHTML = `<div class="error">❌ ${message}</div>`;
+            contentDiv.innerHTML = `<div class="error">${message}</div>`;
             resultDiv.classList.add('show');
         }
         
@@ -366,4 +886,3 @@
     </script>
 </body>
 </html>
-
