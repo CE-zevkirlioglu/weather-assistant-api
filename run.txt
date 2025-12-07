@@ -1,0 +1,220 @@
+Weather Assistant – Çalıştırma Rehberi
+=====================================
+
+Gereksinimler
+-------------
+- Python 3.10 veya üzeri (proje Python 3.14 ile test edildi)
+- WeatherAPI hesabı ve API anahtarı (örn. `daec79c46ef54c2593693338250811`)
+- Aktif internet bağlantısı (gerçek zamanlı hava verisi için)
+
+1. Depoyu İndirme ve Dizin Değiştirme
+-------------------------------------
+```powershell
+git clone <repo-url>
+cd weather-assistant
+```
+
+2. Sanal Ortam Oluşturma ve Aktifleştirme
+-----------------------------------------
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+Komut satırında `(.venv)` ifadesini görmelisiniz. Bu sanal ortam projeye özel paket kurulumlarını izole eder.
+
+3. Gerekli Python Paketlerini Kurma
+-----------------------------------
+`requirements.txt` içindeki bazı paketler (ör. gradio) Rust derleyicisi istediği için sunucuyu çalıştırmak için gereken çekirdek paketleri yüklüyoruz:
+```powershell
+pip install pandas numpy scikit-learn joblib requests python-dateutil flask
+```
+Bu komut; veri işleme, model yükleme ve Flask API için yeterlidir.
+
+4. Ortam Değişkenlerini Tanımlama
+---------------------------------
+- WeatherAPI anahtarı (geçici olarak mevcut oturum için):
+  ```powershell
+  $Env:WEATHER_API_KEY = "daec79c46ef54c2593693338250811"
+  ```
+  Kalıcı yapmak isterseniz: `setx WEATHER_API_KEY "..."` komutunu çalıştırıp yeni PowerShell açın.
+
+- Python modül yolunu `src` dizinine yönlendirerek modüllerin tanınmasını sağlayın:
+  ```powershell
+  $Env:PYTHONPATH = "$PWD\src"
+  ```
+  (Gerekirse `setx PYTHONPATH "$PWD\src"` ile kalıcı hale getirilebilir, ancak yeni oturum gerekir.)
+
+5. (Opsiyonel) Veri Setini İnşa Etme
+------------------------------------
+Kaggle’dan alınan ham CSV’ler `data/kaggle/` klasöründe hazırsa, hepsini tek bir eğitim setine dönüştürmek için:
+```powershell
+python src/build_dataset.py
+```
+Bu adım `data/processed/weather_training.csv` dosyasını üretir. Dosya zaten varsa ve veriyi güncellemek istemiyorsanız bu adımı atlayabilirsiniz. Komut çalışırken veri kaynaklarına göre etiket oranlarını da ekrana yazacaktır.
+
+6. (Opsiyonel) Modeli Yeniden Eğitme
+------------------------------------
+Mevcut `models/weather_model.pkl` dosyası güncelse tekrar eğitmeye gerek yoktur. Yine de yeni veri eklediyseniz çalıştırın:
+```powershell
+python src/train.py --csv data/processed/weather_training.csv --out models
+```
+Bu komut, çok etiketli (multi-label) modelleri karşılaştırır ve en iyi sonucu veren RandomForest paketini `models/weather_model.pkl` olarak kaydeder. Eğitim sonunda her etiket için precision/recall/F1 skorlarını terminalde göreceksiniz.
+
+7. API Sunucusunu Başlatma
+--------------------------
+```powershell
+python -m flask --app src.server run --host 0.0.0.0 --port 8000
+```
+Alternatif olarak, Flask CLI yerine doğrudan Python üzerinden de çalıştırabilirsiniz:
+```powershell
+python -c "import sys; sys.path.append('src'); import server; server.run()"
+```
+Sunucu açıldıktan sonra tarayıcıdan `http://localhost:8000/health` adresine giderek `{"status":"ok"}` cevabını kontrol edin.
+
+8. API’yi Test Etme
+-------------------
+Sunucu açıkken aynı makinada yeni bir PowerShell penceresi açın (gerekirse sanal ortamı tekrar etkinleştirin) ve aşağıdaki örneklerden biriyle istek gönderin.
+
+### 8.1. Koordinat Göndererek (cURL)
+```powershell
+curl.exe -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"lat":41.0082,"lon":28.9784}'
+```
+
+### 8.2. Manuel Özellik Göndererek (cURL)
+```powershell
+curl.exe -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"features":{"temp":35,"humidity":40,"wind_speed":12,"pressure":1008,"clouds":20,"uv_index":9}}'
+```
+
+### 8.3. PowerShell `Invoke-WebRequest` ile
+```powershell
+$response = Invoke-WebRequest -Uri "http://localhost:8000/predict" `
+  -Method POST `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{"lat":41.0082,"lon":28.9784}'
+
+$response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 5
+```
+Bu yöntem JSON yanıtı biçimli görmenizi sağlar.
+
+Yanıt İçeriği
+-------------
+- `features`: Sunucunun işlediği sıcaklık, nem, basınç vb. değerler.
+- `prediction`: Her etiket için tahmin (True/False), olasılık ve güven derecesi.
+- `summary`: Kullanıcıya gösterilecek ana mesaj.
+- `recommendations`: Belirlediğimiz 6 önerinin (`hot`, `cold`, `uv_high`, `windy`, `rain`, `pleasant`) her biri için `active: true/false` şeklinde durum bilgisi.
+- `meta`: WeatherAPI’den gelen konum bilgileri ve veri kaynağı.
+
+Sorun Giderme İpuçları
+----------------------
+- `ModuleNotFoundError: weather_api` hatası alırsanız `PYTHONPATH` değişkenini doğru tanımladığınızdan ve yeni PowerShell oturumu açtığınızdan emin olun.
+- `C:\... python.exe: No module named flask` hatası, üçüncü adımda paketlerin kurulmadığını gösterir; komutu tekrar çalıştırın.
+- WeatherAPI yanıtı alamıyorsanız API anahtarınızın geçerli ve doğru planla (en azından ücretsiz plan) aktif olduğundan emin olun.
+
+Çalışmayı Sonlandırma
+---------------------
+- Sunucunun koştuğu PowerShell penceresinde `Ctrl + C` ile Flask uygulamasını kapatabilirsiniz.
+- Sanal ortamdan çıkmak için: `deactivate`
+
+Bu adımları takip ederek projeyi sıfırdan kurabilir, modeli güncelleyebilir ve API üzerinden öneri sistemini test edebilirsiniz.
+
+Örnek dönüt:
+
+{
+    "features":  {
+                     "clouds":  0.0,
+                     "humidity":  88.0,
+                     "pressure":  1019.0,
+                     "temp":  17.3,
+                     "uv_index":  0.0,
+                     "wind_speed":  1.6111111111111112
+                 },
+    "meta":  {
+                 "condition":  "Clear",
+                 "lat":  41.0082,
+                 "local_time":  "2025-11-08 20:31",
+                 "location_country":  "Turkey",
+                 "location_name":  "Istanbul",
+                 "location_region":  "Istanbul",
+                 "lon":  28.9784,
+                 "source":  "weatherapi"
+             },
+    "prediction":  {
+                       "confidences":  {
+                                           "label_cold":  "high",
+                                           "label_hot":  "high",
+                                           "label_rain":  "high",
+                                           "label_uv_high":  "high",
+                                           "label_windy":  "high"
+                                       },
+                       "label":  "NoRain",
+                       "proba":  0.061400162248160514,
+                       "probabilities":  {
+                                             "label_cold":  0.00256475839661768,
+                                             "label_hot":  0.04010962586379582,
+                                             "label_rain":  0.061400162248160514,
+                                             "label_uv_high":  0.0,
+                                             "label_windy":  0.0518777385934717
+                                         },
+                       "states":  {
+                                      "label_cold":  false,
+                                      "label_hot":  false,
+                                      "label_rain":  false,
+                                      "label_uv_high":  false,
+                                      "label_windy":  false
+                                  }
+                   },
+    "recommendations":  [
+                            {
+                                "active":  false,
+                                "id":  "hot",
+    "recommendations":  [
+                            {
+                                "active":  false,
+                                "id":  "hot",
+                                "active":  false,
+                                "id":  "hot",
+                                "message":  "Hava cok sicak, ince giyin."
+                            },
+                            {
+                                "active":  false,
+                                "id":  "cold",
+                                "message":  "Hava cok soguk, kalin giyin."
+                            },
+                            {
+                                "active":  false,
+                                "id":  "uv_high",
+                                "message":  "UV cok fazla, gunes kremi surun."
+                                "message":  "Hava cok soguk, kalin giyin."
+                            },
+                            {
+                                "active":  false,
+                                "id":  "uv_high",
+                                "message":  "UV cok fazla, gunes kremi surun."
+                            {
+                                "active":  false,
+                                "id":  "uv_high",
+                                "message":  "UV cok fazla, gunes kremi surun."
+                                "id":  "uv_high",
+                                "message":  "UV cok fazla, gunes kremi surun."
+                            },
+                                "message":  "UV cok fazla, gunes kremi surun."
+                            },
+                            },
+                            {
+                                "active":  false,
+                                "id":  "windy",
+                                "message":  "Hava cok ruzgarli, kapsonlu giyin."
+                            },
+                            {
+                                "active":  false,
+                                "id":  "rain",
+                                "message":  "Hava yagmurlu, semsiye almayi unutmayin."
+                            },
+                            {
+                                "active":  true,
+                                "id":  "pleasant",
+                                "message":  "Hava durumu oldukca guzel, tadini cikar."
+                            }
+                        ],
+    "summary":  "Hava durumu oldukca guzel, tadini cikar."
+}

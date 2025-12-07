@@ -1,0 +1,10 @@
+pandas
+numpy
+scikit-learn
+joblib
+requests
+python-dateutil
+gradio
+flask
+flask-cors
+gunicorn
