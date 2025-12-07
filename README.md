@@ -4,9 +4,11 @@ Personalized weather assistant that aggregates historical Kaggle datasets with l
 
 ## Overview
 - **Model**: Multi-output RandomForest (macro F1 ≈ 0.99) trained on unified Kaggle datasets.
-- **Live data**: WeatherAPI current conditions endpoint.
+- **Live data**: WeatherAPI current conditions endpoint for real-time weather data.
 - **Output**: Structured JSON containing feature snapshot, per-label probabilities/confidence, and six recommendation flags.
-- **Tech stack**: Python, pandas, scikit-learn, Flask.
+- **Tech stack**: Python, pandas, scikit-learn, Flask, Flask-CORS.
+- **API**: RESTful API with CORS support for mobile applications.
+- **Deployment**: Ready for Render.com, Heroku, and other cloud platforms.
 
 ## Project Structure
 ```
@@ -25,10 +27,21 @@ weather-assistant/
 │   ├── train.py                # model training entrypoint
 │   ├── predict.py              # inference & recommendation helpers
 │   ├── weather_api.py          # WeatherAPI normalization utilities
-│   └── server.py               # Flask API service
-├── requirements.txt            # optional; core packages installed manually
+│   └── server.py               # Flask API service with CORS support
+├── requirements.txt            # Python dependencies
+├── render.yaml                 # Render.com deployment configuration
+├── Procfile                    # Alternative deployment config
+├── runtime.txt                 # Python version specification
+├── start_backend.bat           # Windows batch script to start backend
+├── test_api.py                 # Python test script for API endpoints
+├── test.html                   # Browser-based test interface (recommended)
+├── .gitignore                  # Git ignore rules
 ├── run.txt                     # Turkish runbook (detailed setup guide)
-└── README.md
+├── README.md                   # This file
+├── KULLANIM_REHBERI.md        # Complete usage guide (kurulum, test, deploy)
+├── DEPLOY.md                   # Render.com deployment guide (detailed)
+├── API_DOCS.md                 # Complete API documentation
+└── SISTEM_AKISI.md            # System flow explanation (Turkish)
 ```
 
 ## Datasets
@@ -42,62 +55,114 @@ Place Kaggle files under `data/kaggle/`:
 - `label_rain`, `label_hot`, `label_cold`, `label_uv_high`, `label_windy`
 
 ## Quick Start
+
+### Prerequisites
+- Python 3.11+ (see `runtime.txt`)
+- WeatherAPI.com API key ([Get one here](https://www.weatherapi.com/))
+
+### Installation
 ```powershell
-# 1. clone and enter
+# 1. Clone and enter
 git clone <repo-url>
 cd weather-assistant
 
-# 2. create + activate venv
+# 2. Create and activate virtual environment (recommended)
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
-# 3. install core dependencies
-pip install pandas numpy scikit-learn joblib requests python-dateutil flask
+# 3. Install dependencies
+pip install -r requirements.txt
 
-# 4. environment variables (current session)
+# 4. Set environment variables
 $Env:WEATHER_API_KEY = "<your_weatherapi_key>"
 $Env:PYTHONPATH = "$PWD\src"
 ```
-Optional regeneration:
+
+### Optional: Regenerate Model
 ```powershell
+# Build training dataset from Kaggle files
 python src/build_dataset.py
+
+# Train the model
 python src/train.py --csv data/processed/weather_training.csv --out models
 ```
 
 ## Run the API
+
+### Method 1: Direct Python (Recommended)
+```powershell
+$env:PYTHONPATH="src"
+python src/server.py
+```
+
+### Method 2: Flask CLI
 ```powershell
 python -m flask --app src.server run --host 0.0.0.0 --port 8000
-# or
-python -c "import sys; sys.path.append('src'); import server; server.run()"
-```
-Health check: `http://localhost:8000/health → {"status":"ok"}`
-
-## Testing the Endpoint
-Open a new terminal (activate the virtual env if needed) and use one of the following:
-
-### cURL (coordinates)
-```powershell
-curl.exe -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"lat":41.0082,"lon":28.9784}'
 ```
 
-### cURL (manual features)
+### Method 3: Batch Script (Windows)
 ```powershell
-curl.exe -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"features":{"temp":35,"humidity":40,"wind_speed":12,"pressure":1008,"clouds":20,"uv_index":9}}'
+.\start_backend.bat
 ```
 
-### PowerShell `Invoke-WebRequest`
+**Expected output:**
+```
+ * Running on http://0.0.0.0:8000
+ * Running on http://127.0.0.1:8000
+```
+
+**Health check:** `http://localhost:8000/health → {"status":"ok","model_loaded":true}`
+
+## Testing the API
+
+### Method 1: Browser Test Interface (Easiest)
+1. Start the backend (see "Run the API" above)
+2. Open `test.html` in your browser
+3. Enter coordinates and click "Hava Durumu Tahmini Al"
+
+### Method 2: Python Test Script
 ```powershell
-$response = Invoke-WebRequest -Uri "http://localhost:8000/predict" `
+# Run comprehensive test suite
+python test_api.py
+```
+
+### Method 3: Python Test Script
+```powershell
+python test_api.py
+```
+
+### Method 4: Manual Testing
+
+**Health Check:**
+```powershell
+Invoke-WebRequest -Uri http://localhost:8000/health -UseBasicParsing | Select-Object -ExpandProperty Content
+```
+
+**Predict with Coordinates:**
+```powershell
+$body = '{"lat":41.0082,"lon":28.9784}'
+Invoke-WebRequest -Uri http://localhost:8000/predict `
   -Method POST `
   -Headers @{ "Content-Type" = "application/json" } `
-  -Body '{"lat":41.0082,"lon":28.9784}'
-
-$response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 5
+  -Body $body `
+  -UseBasicParsing | Select-Object -ExpandProperty Content | ConvertFrom-Json | ConvertTo-Json -Depth 10
 ```
 
-Sample response:
+**Predict with Manual Features:**
+```powershell
+curl.exe -X POST "http://localhost:8000/predict" `
+  -H "Content-Type: application/json" `
+  -d '{"features":{"temp":35,"humidity":40,"wind_speed":12,"pressure":1008,"clouds":20,"uv_index":9}}'
+```
+
+**For detailed usage guide, see:**
+- `KULLANIM_REHBERI.md` - Complete usage guide (kurulum, çalıştırma, test, deploy)
+- `API_DOCS.md` - Complete API documentation
+
+**Sample Response:**
 ```json
 {
+  "success": true,
   "features": {
     "clouds": 0.0,
     "humidity": 88.0,
@@ -153,55 +218,171 @@ Sample response:
 }
 ```
 
-## API Usage
-### `POST /predict`
-Request options:
-- **Coordinates** (WeatherAPI lookup)
-  ```json
-  { "lat": 41.0082, "lon": 28.9784 }
-  ```
-- **Manual features**
-  ```json
-  { "features": { "temp": 35, "humidity": 40, "wind_speed": 12, "pressure": 1008, "clouds": 20, "uv_index": 9 } }
-  ```
+## API Endpoints
 
-Sample response:
+### `GET /health`
+Health check endpoint. Returns API status and model loading state.
+
+**Response:**
 ```json
 {
-  "summary": "Hava durumu oldukca guzel, tadini cikar.",
-  "recommendations": [
-    {"id": "hot", "message": "Hava cok sicak, ince giyin.", "active": false},
-    {"id": "pleasant", "message": "Hava durumu oldukca guzel, tadini cikar.", "active": true}
-  ],
-  "prediction": {
-    "states": {"label_rain": false, "label_hot": false, ...},
-    "probabilities": {"label_rain": 0.06, ...},
-    "confidences": {"label_rain": "high", ...},
-    "label": "NoRain",
-    "proba": 0.06
-  },
-  "features": {"temp": 17.3, "humidity": 88.0, ...},
-  "meta": {"location_name": "Istanbul", "source": "weatherapi", ...}
+  "status": "ok",
+  "model_loaded": true
 }
 ```
 
-## Testing & Tooling
-- `run.txt` contains a Turkish step-by-step runbook with troubleshooting tips.
-- Use `Invoke-WebRequest` or `curl.exe` to validate responses while Flask server runs in a separate PowerShell window.
-- Model metrics (printed during `train.py`):
-  - Rain F1 ≈ 0.94 (precision 0.96, recall 0.91)
-  - Other labels F1 ≈ 1.00
-  - Macro F1 ≈ 0.99
+### `POST /predict`
+Main prediction endpoint. Accepts coordinates or manual features.
 
-## Deployment Notes
-- Required environment variables: `WEATHER_API_KEY`, `PYTHONPATH=src` (or adjust module path).
-- Boot command for platforms like Render/Heroku: `gunicorn server:app --chdir src`
-- Ensure `models/weather_model.pkl` is bundled or accessible.
-- **Render.com Deployment**: Detaylı deploy rehberi için `DEPLOY.md` dosyasına bakın.
-- **CORS**: Mobil uygulamalar için CORS desteği aktif durumda.
+**Request Options:**
+
+1. **Coordinates** (Recommended - uses WeatherAPI for real-time data)
+   ```json
+   {
+     "lat": 41.0082,
+     "lon": 28.9784
+   }
+   ```
+
+2. **Manual Features**
+   ```json
+   {
+     "features": {
+       "temp": 35,
+       "humidity": 40,
+       "wind_speed": 12,
+       "pressure": 1008,
+       "clouds": 20,
+       "uv_index": 9
+     }
+   }
+   ```
+
+**Response Structure:**
+- `success`: Boolean indicating request success
+- `summary`: Main recommendation message in Turkish
+- `recommendations`: Array of all recommendations with active flags
+- `features`: Weather data used for prediction
+- `prediction`: Model predictions (states, probabilities, confidences)
+- `meta`: Location and source information
+
+**For complete API documentation, see `API_DOCS.md`**
+
+## Testing & Tooling
+
+### Available Test Tools
+- **`test.html`** - Browser-based visual test interface (recommended)
+- **`test_api.py`** - Comprehensive Python test suite
+- **`start_backend.bat`** - Windows batch script to start backend easily
+
+### Documentation Files
+- **`KULLANIM_REHBERI.md`** - Complete usage guide (kurulum, çalıştırma, test, deploy)
+- **`API_DOCS.md`** - Complete API documentation with mobile app examples
+- **`SISTEM_AKISI.md`** - System flow explanation in Turkish
+- **`DEPLOY.md`** - Render.com deployment guide (detailed)
+- **`run.txt`** - Turkish runbook with troubleshooting tips
+
+### Model Metrics
+Model performance (printed during `train.py`):
+- Rain F1 ≈ 0.94 (precision 0.96, recall 0.91)
+- Other labels F1 ≈ 1.00
+- Macro F1 ≈ 0.99
+
+## Deployment
+
+### Render.com (Recommended)
+- Quick guide: See `KULLANIM_REHBERI.md` → "Render.com'a Deploy" section
+- Detailed guide: See `DEPLOY.md` for step-by-step deployment guide
+
+**Quick Deploy:**
+1. Push code to GitHub
+2. Create new Web Service on Render.com
+3. Connect GitHub repository
+4. Set environment variables:
+   - `WEATHER_API_KEY`: Your WeatherAPI.com key
+   - `PYTHONPATH`: `src`
+5. Deploy!
+
+**Configuration files:**
+- `render.yaml` - Render.com service configuration
+- `Procfile` - Alternative deployment config
+- `runtime.txt` - Python version specification
+
+### Other Platforms
+- **Heroku**: Use `Procfile` with command: `gunicorn --chdir src server:app`
+- **Docker**: Create Dockerfile using `requirements.txt`
+- **VPS**: Use `gunicorn` with systemd service
+
+### Environment Variables
+- **`WEATHER_API_KEY`** (Required): Your WeatherAPI.com API key
+- **`PYTHONPATH`** (Required): Set to `src` for module imports
+- **`PORT`** (Optional): Server port (default: 8000)
+
+### Important Notes
+- Ensure `models/weather_model.pkl` is included in deployment
+- CORS is enabled for mobile applications
+- Model loads at startup (may take a few seconds)
+- WeatherAPI.com has rate limits (check your plan)
+
+## Mobile App Integration
+
+The API is ready for mobile applications! See `API_DOCS.md` for complete integration examples.
+
+**Quick Integration:**
+```javascript
+// Example: React Native / JavaScript
+const response = await fetch('https://your-api.onrender.com/predict', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    lat: userLatitude,
+    lon: userLongitude
+  })
+});
+
+const data = await response.json();
+console.log(data.summary); // Turkish recommendation message
+```
+
+**Features:**
+- ✅ CORS enabled for cross-origin requests
+- ✅ Real-time weather data from WeatherAPI.com
+- ✅ ML-powered predictions and recommendations
+- ✅ Structured JSON responses
+- ✅ Error handling and validation
+
+## How It Works
+
+1. **Mobile app** sends coordinates (lat, lon) to `/predict` endpoint
+2. **Backend** fetches real-time weather data from WeatherAPI.com
+3. **ML Model** analyzes weather features and makes predictions
+4. **Recommendations** are generated based on model outputs
+5. **Response** is returned to mobile app with summary and recommendations
+
+See `SISTEM_AKISI.md` for detailed system flow explanation.
 
 ## Support & Extensions
-- Extend datasets by adding UV/pressure estimations to additional CSVs.
-- Introduce calibration or adjust thresholds per region.
-- Add localization support for recommendation messages.
-- Integrate feedback loop for continuous model updates.
+
+### Future Enhancements
+- Extend datasets by adding UV/pressure estimations to additional CSVs
+- Introduce calibration or adjust thresholds per region
+- Add localization support for recommendation messages (currently Turkish)
+- Integrate feedback loop for continuous model updates
+- Add caching for frequently requested locations
+- Implement rate limiting for API protection
+
+### Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is open source and available for educational purposes.
+
+## Acknowledgments
+- WeatherAPI.com for real-time weather data
+- Kaggle datasets for model training
+- Flask and scikit-learn communities
