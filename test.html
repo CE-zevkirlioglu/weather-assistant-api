@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Assistant API Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .result h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .summary {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .recommendations {
+            margin-top: 15px;
+        }
+        
+        .recommendation {
+            background: white;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .recommendation.inactive {
+            opacity: 0.5;
+            border-left-color: #ccc;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #c33;
+            margin-top: 15px;
+        }
+        
+        .location-info {
+            background: #e7f3ff;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌤️ Weather Assistant API</h1>
+        <p class="subtitle">Hava durumu tahmini ve önerileri için API test arayüzü</p>
+        
+        <div class="form-group">
+            <label for="apiUrl">API URL:</label>
+            <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+        </div>
+        
+        <div class="form-group">
+            <label for="latitude">Latitude (Enlem):</label>
+            <input type="number" id="latitude" value="41.0082" step="0.0001" placeholder="41.0082">
+        </div>
+        
+        <div class="form-group">
+            <label for="longitude">Longitude (Boylam):</label>
+            <input type="number" id="longitude" value="28.9784" step="0.0001" placeholder="28.9784">
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-primary" onclick="testPredict()">Hava Durumu Tahmini Al</button>
+            <button class="btn-secondary" onclick="testHealth()">Health Check</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px;">İstek gönderiliyor...</p>
+        </div>
+        
+        <div class="result" id="result">
+            <h2>Sonuç:</h2>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        async function testPredict() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lon = parseFloat(document.getElementById('longitude').value);
+            
+            if (!lat || !lon) {
+                showError('Lütfen geçerli koordinatlar girin!');
+                return;
+            }
+            
+            showLoading(true);
+            hideResult();
+            
+            try {
+                const response = await fetch(`${apiUrl}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        lat: lat,
+                        lon: lon
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(data);
+                } else {
+                    showError(data.error || 'Bir hata oluştu');
+                }
+            } catch (error) {
+                showError(`Bağlantı hatası: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function testHealth() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            
+            showLoading(true);
+            hideResult();
+            
+            try {
+                const response = await fetch(`${apiUrl}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult({
+                        status: data.status,
+                        model_loaded: data.model_loaded,
+                        message: 'API çalışıyor! ✅'
+                    });
+                } else {
+                    showError('Health check başarısız');
+                }
+            } catch (error) {
+                showError(`Bağlantı hatası: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function showResult(data) {
+            const resultDiv = document.getElementById('result');
+            const contentDiv = document.getElementById('resultContent');
+            
+            let html = '';
+            
+            if (data.summary) {
+                // Predict endpoint response
+                html += `<div class="summary">${data.summary}</div>`;
+                
+                if (data.meta && data.meta.location_name) {
+                    html += `<div class="location-info">
+                        📍 ${data.meta.location_name}, ${data.meta.location_country || ''}
+                        ${data.meta.local_time ? '<br>🕐 ' + data.meta.local_time : ''}
+                    </div>`;
+                }
+                
+                if (data.recommendations && data.recommendations.length > 0) {
+                    html += '<div class="recommendations"><strong>Öneriler:</strong>';
+                    data.recommendations.forEach(rec => {
+                        const className = rec.active ? '' : 'inactive';
+                        html += `<div class="recommendation ${className}">${rec.message}</div>`;
+                    });
+                    html += '</div>';
+                }
+                
+                if (data.features) {
+                    html += '<div style="margin-top: 15px; font-size: 12px; color: #666;">';
+                    html += '<strong>Hava Durumu Verileri:</strong><br>';
+                    html += `🌡️ Sıcaklık: ${data.features.temp}°C<br>`;
+                    html += `💧 Nem: ${data.features.humidity}%<br>`;
+                    html += `💨 Rüzgar: ${data.features.wind_speed} m/s<br>`;
+                    html += `📊 Basınç: ${data.features.pressure} hPa<br>`;
+                    html += `☁️ Bulutluluk: ${data.features.clouds}%<br>`;
+                    html += `☀️ UV İndeksi: ${data.features.uv_index}`;
+                    html += '</div>';
+                }
+            } else {
+                // Health check response
+                html += `<div class="summary">${data.message || 'API çalışıyor!'}</div>`;
+                html += `<div class="location-info">Model Durumu: ${data.model_loaded ? '✅ Yüklü' : '❌ Yüklenemedi'}</div>`;
+            }
+            
+            contentDiv.innerHTML = html;
+            resultDiv.classList.add('show');
+        }
+        
+        function showError(message) {
+            const resultDiv = document.getElementById('result');
+            const contentDiv = document.getElementById('resultContent');
+            
+            contentDiv.innerHTML = `<div class="error">❌ ${message}</div>`;
+            resultDiv.classList.add('show');
+        }
+        
+        function showLoading(show) {
+            const loadingDiv = document.getElementById('loading');
+            if (show) {
+                loadingDiv.classList.add('show');
+            } else {
+                loadingDiv.classList.remove('show');
+            }
+        }
+        
+        function hideResult() {
+            document.getElementById('result').classList.remove('show');
+        }
+    </script>
+</body>
+</html>
+
