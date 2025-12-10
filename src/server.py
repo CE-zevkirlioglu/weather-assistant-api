@@ -69,7 +69,7 @@ def coerce_features(raw: Dict) -> Dict[str, float]:
     return features  # type: ignore[return-value]
 
 
-def build_recommendations(prediction: Dict) -> Tuple[str, list]:
+def build_recommendations(prediction: Dict, features: Optional[Dict[str, float]] = None) -> Tuple[str, list]:
     states = prediction.get("states", {})
 
     flags = {
@@ -79,6 +79,21 @@ def build_recommendations(prediction: Dict) -> Tuple[str, list]:
         "windy": bool(states.get("label_windy")),
         "rain": bool(states.get("label_rain")),
     }
+
+    # Ek kontrol: Model 10°C'nin altını "cold" olarak işaretliyor ama
+    # 10-15°C arası da çoğu insan için soğuk sayılır. Bu aralığı da kontrol edelim.
+    if features and "temp" in features:
+        temp = features["temp"]
+        # 15°C ve altı soğuk kabul edilir (model eşiği 10°C ama gerçekçi eşik 15°C)
+        if temp <= 15.0 and not flags["cold"]:
+            flags["cold"] = True
+
+    # Ek kontrol: UV indeksi için de gerçekçi eşik kontrolü
+    if features and "uv_index" in features:
+        uv_index = features["uv_index"]
+        # 5 ve üzeri UV yüksek kabul edilir (model eşiği 7 ama gerçekçi eşik 5)
+        if uv_index >= 5.0 and not flags["uv_high"]:
+            flags["uv_high"] = True
 
     pleasant_active = not any(flags.values())
 
@@ -172,7 +187,7 @@ def predict_endpoint():
 
     try:
         prediction = predict_conditions(features, model_bundle=MODEL)
-        summary, recommendations = build_recommendations(prediction)
+        summary, recommendations = build_recommendations(prediction, features)
         response = {
             "success": True,
             "features": features,

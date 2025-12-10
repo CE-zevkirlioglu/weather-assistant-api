@@ -11,8 +11,8 @@ PROCESSED_DIR = DATA_DIR / "processed"
 FEATURE_COLUMNS = ["temp", "humidity", "wind_speed", "pressure", "clouds", "uv_index"]
 LABEL_COLUMNS = ["label_rain", "label_hot", "label_cold", "label_uv_high", "label_windy"]
 HOT_THRESHOLD = 30.0
-COLD_THRESHOLD = 10.0
-UV_THRESHOLD = 7.0
+COLD_THRESHOLD = 15.0  # 15°C ve altı soğuk kabul edilir (daha gerçekçi eşik)
+UV_THRESHOLD = 5.0  # 5 ve üzeri UV yüksek kabul edilir
 WIND_THRESHOLD = 10.0
 
 
