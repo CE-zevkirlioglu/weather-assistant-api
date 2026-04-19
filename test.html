@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Weather Assistant · API Console</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0f14;
+      --bg-elevated: #121720;
+      --surface: #181e2a;
+      --border: rgba(148, 163, 184, 0.12);
+      --text: #e8edf7;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-dim: rgba(56, 189, 248, 0.15);
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --radius: 16px;
+      --radius-sm: 12px;
+      --font: "Plus Jakarta Sans", system-ui, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, monospace;
+      --shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+      --space-y: 1rem;
+      --space-section: 1.35rem;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      height: 100%;
+      overflow: hidden;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 189, 248, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(99, 102, 241, 0.08), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      height: 100dvh;
+      max-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header.hero {
+      flex-shrink: 0;
+      padding: 0.65rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(12, 15, 20, 0.65);
+      backdrop-filter: blur(12px);
+    }
+
+    .hero-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .hero h1 {
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .hero h1 .logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      display: block;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .hero-tag {
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.4;
+      max-width: 42ch;
+    }
+
+    .workspace {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.65rem 1rem 0.85rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (min-width: 960px) {
+      .workspace {
+        flex-direction: row;
+        align-items: stretch;
+        gap: 1rem 1.35rem;
+        padding: 0.85rem 1.25rem 1rem;
+      }
+    }
+
+    /* Left: bounded to workspace height — never clip; scroll only if content exceeds */
+    .panel-col {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      max-height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+    }
+
+    .panel-col::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .panel-col::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.35);
+      border-radius: 99px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    @media (min-width: 960px) {
+      .panel-col {
+        flex: 0 0 23rem;
+        width: 23rem;
+        max-width: 23rem;
+        align-self: stretch;
+      }
+    }
+
+    /* Denser left column so it usually fits one screen without scrolling */
+    .panel-col .panel.stack {
+      gap: 0.55rem;
+    }
+
+    .panel-col .panel {
+      flex: 0 0 auto;
+      padding: 0.72rem 0.9rem 0.82rem;
+    }
+
+    .panel-col .panel h2 {
+      margin-bottom: 0.55rem;
+    }
+
+    .panel-col .panel h2:not(:first-child) {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .panel-col label.field-label {
+      margin-bottom: 0.22rem;
+      font-size: 0.72rem;
+    }
+
+    .panel-col input[type="text"],
+    .panel-col input[type="number"],
+    .panel-col select {
+      padding: 0.48rem 0.75rem;
+      font-size: 0.84rem;
+    }
+
+    .panel-col select {
+      padding-right: 2rem;
+      background-position: right 10px center;
+    }
+
+    .panel-col .row-2 {
+      gap: 0.65rem;
+    }
+
+    .panel-col .tabs {
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .panel-col .tabs button {
+      padding: 0.42rem 0.55rem;
+      font-size: 0.76rem;
+    }
+
+    .panel-col .toggle-row {
+      padding: 0.5rem 0.65rem;
+    }
+
+    .panel-col .toggle-row span {
+      font-size: 0.78rem;
+    }
+
+    .panel-col .actions {
+      gap: 0.55rem;
+      margin-top: 0.2rem;
+    }
+
+    .panel-col .btn {
+      padding: 0.58rem 0.85rem;
+      font-size: 0.82rem;
+      min-width: 100px;
+    }
+
+    .panel-col .loading-panel {
+      padding: 0.55rem 0.75rem;
+      font-size: 0.82rem;
+      gap: 0.55rem;
+    }
+
+    .panel-col .spinner {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Right: fills remaining width/height — main response area scrolls */
+    .results-col {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .results-toolbar {
+      flex-shrink: 0;
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .output-scroll {
+      flex: 1 1 0;
+      min-height: 0;
+      height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding: 0.85rem 1rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .output-scroll > .card,
+    .output-scroll > .error-box,
+    .output-scroll > details.raw {
+      flex-shrink: 0;
+    }
+
+    .output-scroll::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .output-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.35);
+      border-radius: 99px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    .output-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+    }
+
+    .empty-state {
+      flex-shrink: 0;
+      min-height: 11rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1.5rem 1.25rem;
+      color: var(--muted);
+      border: 1px dashed rgba(148, 163, 184, 0.2);
+      border-radius: var(--radius-sm);
+      background: rgba(18, 23, 32, 0.5);
+    }
+
+    .empty-state .empty-icon {
+      font-size: 1.75rem;
+      opacity: 0.45;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-state h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.35rem;
+    }
+
+    .empty-state p {
+      font-size: 0.82rem;
+      line-height: 1.5;
+      max-width: 28ch;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem 1.15rem;
+      box-shadow: var(--shadow);
+    }
+
+    .panel h2 {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .panel h2:not(:first-child) {
+      margin-top: var(--space-section);
+      padding-top: var(--space-section);
+      border-top: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+
+    label.field-label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.9rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.45);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 2.25rem;
+    }
+
+    .stack { display: flex; flex-direction: column; gap: var(--space-y); }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 6px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .tabs button {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .tabs button:hover { color: var(--text); }
+    .tabs button[aria-selected="true"] {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1rem;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .toggle-row span { font-size: 0.85rem; font-weight: 500; }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      margin-top: 0.35rem;
+    }
+
+    .btn {
+      flex: 1;
+      min-width: 120px;
+      padding: 0.8rem 1.15rem;
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.12s, filter 0.12s;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      color: #fff;
+    }
+
+    .btn-primary:hover { filter: brightness(1.06); }
+
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover { border-color: rgba(148, 163, 184, 0.35); }
+
+    .loading-panel {
+      display: none;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 1.1rem 1.35rem;
+      background: var(--accent-dim);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      color: var(--text);
+    }
+
+    .loading-panel.show { display: flex; }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 2px solid rgba(56, 189, 248, 0.25);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .card-h {
+      padding: 1rem 1.35rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .card-b { padding: 1.35rem 1.45rem 1.5rem; }
+
+    .summary-text {
+      font-size: 1.08rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.65;
+      color: var(--text);
+    }
+
+    .meta-line {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 1.1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.35rem;
+    }
+
+    .meta-line strong { color: var(--text); font-weight: 500; }
+
+    .risk-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem 1.5rem;
+    }
+
+    .risk-score {
+      font-family: var(--mono);
+      font-size: 2.25rem;
+      font-weight: 500;
+      letter-spacing: -0.04em;
+      color: var(--accent);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .badge-low { background: rgba(52, 211, 153, 0.15); color: var(--success); }
+    .badge-moderate { background: rgba(251, 191, 36, 0.15); color: var(--warning); }
+    .badge-high { background: rgba(251, 146, 60, 0.18); color: #fb923c; }
+    .badge-very_high { background: rgba(248, 113, 113, 0.18); color: var(--danger); }
+
+    .factors {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-top: 0.5rem;
+    }
+
+    .factors code {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      background: var(--bg-elevated);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    .grid-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+      gap: 0.9rem;
+    }
+
+    .metric {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 0.95rem;
+    }
+
+    .metric dt {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .metric dd {
+      font-family: var(--mono);
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .rec-list { display: flex; flex-direction: column; gap: 0.65rem; }
+
+    .rec {
+      padding: 0.85rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-size: 0.88rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      transition: opacity 0.15s;
+    }
+
+    .rec.active {
+      border-color: rgba(52, 211, 153, 0.35);
+      background: rgba(52, 211, 153, 0.06);
+    }
+
+    .rec.inactive { opacity: 0.42; }
+
+    .rec-id {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .labels-grid {
+      display: grid;
+      gap: 0.65rem;
+      font-size: 0.82rem;
+    }
+
+    .label-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .label-row:last-child { border-bottom: none; }
+
+    .prob-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--bg-elevated);
+      overflow: hidden;
+      margin-top: 0.25rem;
+      grid-column: 1 / -1;
+    }
+
+    .prob-bar > i {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #38bdf8);
+      border-radius: 3px;
+    }
+
+    details.raw {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+    }
+
+    details.raw summary {
+      cursor: pointer;
+      padding: 0.85rem 1.1rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    details.raw summary::-webkit-details-marker { display: none; }
+
+    details.raw pre {
+      margin: 0;
+      padding: 1rem 1.15rem 1.15rem;
+      overflow: auto;
+      max-height: min(220px, 28vh);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      line-height: 1.45;
+      color: #cbd5e1;
+      border-top: 1px solid var(--border);
+    }
+
+    .error-box {
+      padding: 1.2rem 1.4rem;
+      border-radius: var(--radius-sm);
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.25);
+      color: #fecaca;
+      font-size: 0.9rem;
+    }
+
+    .btn-ghost {
+      font-size: 0.72rem;
+      padding: 0.35rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--muted);
+      cursor: pointer;
+      font-family: var(--font);
+    }
+
+    .btn-ghost:hover { color: var(--text); border-color: rgba(148, 163, 184, 0.35); }
+
+    .health-ok { color: var(--success); font-weight: 600; }
+
+    @media (max-width: 959px) {
+      .workspace {
+        flex-direction: column;
+      }
+
+      .panel-col {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: none;
+      }
+
+      .results-col {
+        flex: 1;
+        min-height: 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .row-2 { grid-template-columns: 1fr; }
+      .risk-strip { flex-direction: column; align-items: flex-start; }
+      .hero-inner { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <div class="hero-inner">
+        <h1><img class="logo" src="favicon.png" alt="" width="32" height="32" decoding="async" aria-hidden="true"> Weather Assistant · API Console</h1>
+        <p class="hero-tag"><code style="font-family:var(--mono);font-size:0.78rem;color:var(--accent);">POST /predict</code> · <code style="font-family:var(--mono);font-size:0.78rem;color:var(--accent);">GET /health</code> · <code style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);">risk_summary</code></p>
+      </div>
+    </header>
+
+    <div class="workspace">
+    <aside class="panel-col" aria-label="Request controls">
+    <div class="panel stack">
+      <h2>Connection</h2>
+      <div>
+        <label class="field-label" for="apiUrl">Base URL</label>
+        <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000" autocomplete="url" spellcheck="false">
+      </div>
+
+      <div class="toggle-row">
+        <span>Append <code style="font-family:var(--mono);font-size:0.75rem;">?explain=true</code></span>
+        <input type="checkbox" id="explainToggle" title="Per-label explanation payload">
+      </div>
+
+      <h2>Request body</h2>
+      <div class="tabs" role="tablist" aria-label="Input mode">
+        <button type="button" role="tab" id="tabCoords" aria-selected="true">Coordinates</button>
+        <button type="button" role="tab" id="tabManual" aria-selected="false">Manual features</button>
+      </div>
+
+      <div id="coordsMode" class="stack">
+        <div>
+          <label class="field-label" for="citySelect">Quick pick (Turkey)</label>
+          <select id="citySelect">
+            <option value="">— Custom coordinates —</option>
+          </select>
+        </div>
+        <div class="row-2">
+          <div>
+            <label class="field-label" for="latitude">Latitude</label>
+            <input type="number" id="latitude" value="41.0082" step="any">
+          </div>
+          <div>
+            <label class="field-label" for="longitude">Longitude</label>
+            <input type="number" id="longitude" value="28.9784" step="any">
+          </div>
+        </div>
+      </div>
+
+      <div id="manualMode" class="stack" hidden>
+        <div class="row-2">
+          <div><label class="field-label" for="temp">Temp °C</label><input type="number" id="temp" value="25" step="any"></div>
+          <div><label class="field-label" for="humidity">Humidity %</label><input type="number" id="humidity" value="60" step="any"></div>
+        </div>
+        <div class="row-2">
+          <div><label class="field-label" for="windSpeed">Wind m/s</label><input type="number" id="windSpeed" value="5" step="any"></div>
+          <div><label class="field-label" for="pressure">Pressure hPa</label><input type="number" id="pressure" value="1013" step="any"></div>
+        </div>
+        <div class="row-2">
+          <div><label class="field-label" for="clouds">Clouds %</label><input type="number" id="clouds" value="30" step="any"></div>
+          <div><label class="field-label" for="uvIndex">UV index</label><input type="number" id="uvIndex" value="6" step="any"></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="btnPredict">Run prediction</button>
+        <button type="button" class="btn btn-secondary" id="btnHealth">Health check</button>
+      </div>
+
+      <div class="loading-panel" id="loadingPanel" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <span id="loadingText">Sending request…</span>
+      </div>
+    </div>
+    </aside>
+
+    <section class="results-col" aria-label="API response">
+      <div class="results-toolbar">Response</div>
+      <div class="output-scroll" id="output" aria-live="polite">
+        <div class="empty-state" id="outputEmpty">
+          <div class="empty-icon" aria-hidden="true">◈</div>
+          <h3>No response yet</h3>
+          <p>Run <strong>prediction</strong> or <strong>health check</strong> from the left. This panel scrolls only if the payload is long—the page stays put.</p>
+        </div>
+      </div>
+    </section>
+    </div>
+  </div>
+
+  <script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+
+  const cities = {
+    '37.0000,35.3213': { name: 'Adana', lat: 37.0000, lon: 35.3213 },
+    '37.7636,38.2786': { name: 'Adıyaman', lat: 37.7636, lon: 38.2786 },
+    '38.7561,30.5386': { name: 'Afyonkarahisar', lat: 38.7561, lon: 30.5386 },
+    '39.7217,43.0567': { name: 'Ağrı', lat: 39.7217, lon: 43.0567 },
+    '38.3686,34.0294': { name: 'Aksaray', lat: 38.3686, lon: 34.0294 },
+    '40.6533,35.8331': { name: 'Amasya', lat: 40.6533, lon: 35.8331 },
+    '39.9334,32.8597': { name: 'Ankara', lat: 39.9334, lon: 32.8597 },
+    '36.8969,30.7133': { name: 'Antalya', lat: 36.8969, lon: 30.7133 },
+    '41.1106,42.7022': { name: 'Ardahan', lat: 41.1106, lon: 42.7022 },
+    '41.1828,41.8183': { name: 'Artvin', lat: 41.1828, lon: 41.8183 },
+    '37.8444,27.8458': { name: 'Aydın', lat: 37.8444, lon: 27.8458 },
+    '39.6484,27.8826': { name: 'Balıkesir', lat: 39.6484, lon: 27.8826 },
+    '41.6350,32.3383': { name: 'Bartın', lat: 41.6350, lon: 32.3383 },
+    '37.8812,41.1351': { name: 'Batman', lat: 37.8812, lon: 41.1351 },
+    '40.2553,40.2247': { name: 'Bayburt', lat: 40.2553, lon: 40.2247 },
+    '40.1428,29.9792': { name: 'Bilecik', lat: 40.1428, lon: 29.9792 },
+    '38.8847,40.4981': { name: 'Bingöl', lat: 38.8847, lon: 40.4981 },
+    '38.4000,42.1089': { name: 'Bitlis', lat: 38.4000, lon: 42.1089 },
+    '40.7397,31.6061': { name: 'Bolu', lat: 40.7397, lon: 31.6061 },
+    '36.8841,30.7056': { name: 'Bursa', lat: 36.8841, lon: 30.7056 },
+    '37.7203,30.2908': { name: 'Burdur', lat: 37.7203, lon: 30.2908 },
+    '40.1553,26.4142': { name: 'Çanakkale', lat: 40.1553, lon: 26.4142 },
+    '40.5506,34.9536': { name: 'Çorum', lat: 40.5506, lon: 34.9536 },
+    '37.7765,29.0864': { name: 'Denizli', lat: 37.7765, lon: 29.0864 },
+    '37.9144,40.2306': { name: 'Diyarbakır', lat: 37.9144, lon: 40.2306 },
+    '40.8389,31.1633': { name: 'Düzce', lat: 40.8389, lon: 31.1633 },
+    '41.6772,26.5556': { name: 'Edirne', lat: 41.6772, lon: 26.5556 },
+    '38.6743,39.2232': { name: 'Elazığ', lat: 38.6743, lon: 39.2232 },
+    '39.7500,39.5000': { name: 'Erzincan', lat: 39.7500, lon: 39.5000 },
+    '39.9042,41.2679': { name: 'Erzurum', lat: 39.9042, lon: 41.2679 },
+    '39.7767,30.5206': { name: 'Eskişehir', lat: 39.7767, lon: 30.5206 },
+    '37.0662,37.3833': { name: 'Gaziantep', lat: 37.0662, lon: 37.3833 },
+    '40.8028,29.4306': { name: 'Gebze', lat: 40.8028, lon: 29.4306 },
+    '40.9128,38.3894': { name: 'Giresun', lat: 40.9128, lon: 38.3894 },
+    '40.4603,39.4775': { name: 'Gümüşhane', lat: 40.4603, lon: 39.4775 },
+    '37.5744,43.7408': { name: 'Hakkari', lat: 37.5744, lon: 43.7408 },
+    '36.4018,36.3498': { name: 'Hatay', lat: 36.4018, lon: 36.3498 },
+    '39.9239,44.0447': { name: 'Iğdır', lat: 39.9239, lon: 44.0447 },
+    '37.7647,30.5566': { name: 'Isparta', lat: 37.7647, lon: 30.5566 },
+    '41.0082,28.9784': { name: 'İstanbul', lat: 41.0082, lon: 28.9784 },
+    '38.4192,27.1287': { name: 'İzmir', lat: 38.4192, lon: 27.1287 },
+    '40.7656,29.9406': { name: 'İzmit', lat: 40.7656, lon: 29.9406 },
+    '37.5858,36.9371': { name: 'Kahramanmaraş', lat: 37.5858, lon: 36.9371 },
+    '41.2061,32.6278': { name: 'Karabük', lat: 41.2061, lon: 32.6278 },
+    '40.6011,43.0975': { name: 'Kars', lat: 40.6011, lon: 43.0975 },
+    '41.3767,33.7767': { name: 'Kastamonu', lat: 41.3767, lon: 33.7767 },
+    '38.7312,35.4787': { name: 'Kayseri', lat: 38.7312, lon: 35.4787 },
+    '39.8467,33.5153': { name: 'Kırıkkale', lat: 39.8467, lon: 33.5153 },
+    '41.7333,27.2167': { name: 'Kırklareli', lat: 41.7333, lon: 27.2167 },
+    '39.1467,34.1606': { name: 'Kırşehir', lat: 39.1467, lon: 34.1606 },
+    '36.7164,37.1150': { name: 'Kilis', lat: 36.7164, lon: 37.1150 },
+    '40.7667,29.9167': { name: 'Kocaeli', lat: 40.7667, lon: 29.9167 },
+    '37.8714,32.4844': { name: 'Konya', lat: 37.8714, lon: 32.4844 },
+    '39.4167,29.9833': { name: 'Kütahya', lat: 39.4167, lon: 29.9833 },
+    '38.3552,38.3095': { name: 'Malatya', lat: 38.3552, lon: 38.3095 },
+    '38.6191,27.4289': { name: 'Manisa', lat: 38.6191, lon: 27.4289 },
+    '37.3131,40.7436': { name: 'Mardin', lat: 37.3131, lon: 40.7436 },
+    '36.8121,34.6415': { name: 'Mersin', lat: 36.8121, lon: 34.6415 },
+    '37.2153,28.3636': { name: 'Muğla', lat: 37.2153, lon: 28.3636 },
+    '38.7333,41.4911': { name: 'Muş', lat: 38.7333, lon: 41.4911 },
+    '38.6244,34.7239': { name: 'Nevşehir', lat: 38.6244, lon: 34.7239 },
+    '37.9667,34.6833': { name: 'Niğde', lat: 37.9667, lon: 34.6833 },
+    '40.9839,37.8764': { name: 'Ordu', lat: 40.9839, lon: 37.8764 },
+    '37.0742,36.2478': { name: 'Osmaniye', lat: 37.0742, lon: 36.2478 },
+    '41.0201,40.5234': { name: 'Rize', lat: 41.0201, lon: 40.5234 },
+    '40.7569,30.3786': { name: 'Sakarya', lat: 40.7569, lon: 30.3786 },
+    '41.2867,36.3300': { name: 'Samsun', lat: 41.2867, lon: 36.3300 },
+    '37.1811,38.7903': { name: 'Şanlıurfa', lat: 37.1811, lon: 38.7903 },
+    '37.9333,41.9500': { name: 'Siirt', lat: 37.9333, lon: 41.9500 },
+    '42.0269,35.1506': { name: 'Sinop', lat: 42.0269, lon: 35.1506 },
+    '39.7477,37.0179': { name: 'Sivas', lat: 39.7477, lon: 37.0179 },
+    '37.5167,42.4500': { name: 'Şırnak', lat: 37.5167, lon: 42.4500 },
+    '40.9833,27.5167': { name: 'Tekirdağ', lat: 40.9833, lon: 27.5167 },
+    '40.3139,36.5544': { name: 'Tokat', lat: 40.3139, lon: 36.5544 },
+    '41.0015,39.7178': { name: 'Trabzon', lat: 41.0015, lon: 39.7178 },
+    '39.1081,39.5481': { name: 'Tunceli', lat: 39.1081, lon: 39.5481 },
+    '38.6828,29.4056': { name: 'Uşak', lat: 38.6828, lon: 29.4056 },
+    '38.4891,43.4089': { name: 'Van', lat: 38.4891, lon: 43.4089 },
+    '39.8208,34.8044': { name: 'Yozgat', lat: 39.8208, lon: 34.8044 },
+    '41.4564,31.7987': { name: 'Zonguldak', lat: 41.4564, lon: 31.7987 }
+  };
+
+  function populateCitySelect() {
+    const sel = $('citySelect');
+    const sorted = Object.entries(cities).sort((a, b) =>
+      a[1].name.localeCompare(b[1].name, 'tr')
+    );
+    for (const [key, c] of sorted) {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = c.name;
+      sel.appendChild(opt);
+    }
+  }
+
+  function normalizeBase(url) {
+    return String(url || '').trim().replace(/\/+$/, '');
+  }
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    const d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  function riskBadgeClass(level) {
+    const m = {
+      low: 'badge-low',
+      moderate: 'badge-moderate',
+      high: 'badge-high',
+      very_high: 'badge-very_high'
+    };
+    return m[level] || 'badge-moderate';
+  }
+
+  function renderPredict(data) {
+    const rs = data.risk_summary || {};
+    const factors = Array.isArray(rs.risk_factors) ? rs.risk_factors : [];
+    const factorHtml = factors.length
+      ? factors.map((f) => `<code>${escapeHtml(f)}</code>`).join(' ')
+      : '<span style="color:var(--muted)">none</span>';
+
+    let html = '';
+
+    html += `<section class="card"><div class="card-h"><span>Summary</span></div><div class="card-b">
+      <p class="summary-text">${escapeHtml(data.summary || '—')}</p>`;
+
+    if (data.meta && (data.meta.location_name || data.meta.source)) {
+      html += `<div class="meta-line">`;
+      if (data.meta.location_name) {
+        html += `<span><strong>Place</strong> ${escapeHtml(data.meta.location_name)}${data.meta.location_country ? ', ' + escapeHtml(data.meta.location_country) : ''}</span>`;
+      }
+      if (data.meta.local_time) html += `<span><strong>Local</strong> ${escapeHtml(data.meta.local_time)}</span>`;
+      if (data.meta.condition) html += `<span><strong>Sky</strong> ${escapeHtml(data.meta.condition)}</span>`;
+      if (data.meta.source) html += `<span><strong>Source</strong> ${escapeHtml(data.meta.source)}</span>`;
+      html += `</div>`;
+    }
+    html += `</div></section>`;
+
+    if (rs.risk_score != null || rs.risk_level) {
+      html += `<section class="card"><div class="card-h"><span>Outdoor risk</span></div><div class="card-b">
+        <div class="risk-strip">
+          <span class="risk-score">${escapeHtml(Number(rs.risk_score).toFixed(3))}</span>
+          ${rs.risk_level ? `<span class="badge ${riskBadgeClass(rs.risk_level)}">${escapeHtml(rs.risk_level.replace(/_/g, ' '))}</span>` : ''}
+        </div>
+        <p class="factors" style="margin-top:0.75rem">Factors: ${factorHtml}</p>
+      </div></section>`;
+    }
+
+    if (data.features) {
+      const f = data.features;
+      html += `<section class="card"><div class="card-h"><span>Input features</span></div><div class="card-b"><div class="grid-metrics">`;
+      const rows = [
+        ['Temp', f.temp != null ? `${Number(f.temp).toFixed(1)} °C` : '—'],
+        ['Humidity', f.humidity != null ? `${Number(f.humidity).toFixed(0)} %` : '—'],
+        ['Wind', f.wind_speed != null ? `${Number(f.wind_speed).toFixed(2)} m/s` : '—'],
+        ['Pressure', f.pressure != null ? `${Number(f.pressure).toFixed(0)} hPa` : '—'],
+        ['Clouds', f.clouds != null ? `${Number(f.clouds).toFixed(0)} %` : '—'],
+        ['UV', f.uv_index != null ? String(f.uv_index) : '—']
+      ];
+      for (const [k, v] of rows) {
+        html += `<dl class="metric"><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd></dl>`;
+      }
+      html += `</div></div></section>`;
+    }
+
+    if (data.label != null || data.states) {
+      html += `<section class="card"><div class="card-h"><span>Model output</span>
+        ${data.label ? `<span class="badge badge-low" style="text-transform:none;letter-spacing:0">${escapeHtml(data.label)}</span>` : ''}
+      </div><div class="card-b"><div class="labels-grid">`;
+
+      const probs = data.probabilities || {};
+      const states = data.states || {};
+      const labels = Object.keys(states).length ? Object.keys(states) : Object.keys(probs);
+
+      for (const lab of labels.sort()) {
+        const p = probs[lab];
+        const st = states[lab];
+        const pct = p != null && !Number.isNaN(Number(p)) ? Math.round(Number(p) * 1000) / 10 : null;
+        html += `<div class="label-row">
+          <span style="font-family:var(--mono);font-size:0.78rem">${escapeHtml(lab)}</span>
+          <span style="font-size:0.78rem;color:var(--muted)">${st === true ? 'true' : st === false ? 'false' : '—'}</span>
+          <span style="font-family:var(--mono);font-size:0.78rem">${pct != null ? pct + '%' : '—'}</span>`;
+        if (pct != null) {
+          html += `<div class="prob-bar"><i style="width:${Math.min(100, pct)}%"></i></div>`;
+        }
+        html += `</div>`;
+      }
+      html += `</div></div></section>`;
+    }
+
+    if (data.recommendations && data.recommendations.length) {
+      html += `<section class="card"><div class="card-h"><span>Recommendations</span></div><div class="card-b"><div class="rec-list">`;
+      for (const rec of data.recommendations) {
+        const active = !!rec.active;
+        html += `<div class="rec ${active ? 'active' : 'inactive'}">
+          <span class="rec-id">${escapeHtml(rec.id || '')}</span>
+          <span>${escapeHtml(rec.message || '')}</span>
+        </div>`;
+      }
+      html += `</div></div></section>`;
+    }
+
+    if (data.explanation && data.explanation.per_label) {
+      html += `<section class="card"><div class="card-h"><span>Explanation (per label)</span></div><div class="card-b" style="font-size:0.82rem">`;
+      for (const row of data.explanation.per_label) {
+        html += `<div style="padding:0.35rem 0;border-bottom:1px solid var(--border)">
+          <strong style="font-family:var(--mono);font-size:0.78rem">${escapeHtml(row.label)}</strong>
+          · p=${escapeHtml(row.probability)} · ${escapeHtml(row.confidence)} · predicted ${escapeHtml(row.predicted)}</div>`;
+      }
+      html += `</div></section>`;
+    }
+
+    const jsonStr = JSON.stringify(data, null, 2);
+    html += `<details class="raw"><summary>Raw JSON <button type="button" class="btn-ghost" id="copyJsonBtn">Copy</button></summary><pre>${escapeHtml(jsonStr)}</pre></details>`;
+
+    return html;
+  }
+
+  function renderHealth(data) {
+    const ok = data.model_loaded === true;
+    return `
+      <section class="card"><div class="card-h"><span>Health</span><span class="${ok ? 'health-ok' : ''}">${ok ? 'Operational' : 'Check logs'}</span></div>
+      <div class="card-b">
+        <p style="font-size:0.95rem;margin-bottom:0.75rem">${escapeHtml(data.message || 'Service responded.')}</p>
+        <div class="grid-metrics">
+          <dl class="metric"><dt>status</dt><dd>${escapeHtml(data.status)}</dd></dl>
+          <dl class="metric"><dt>model_loaded</dt><dd>${escapeHtml(String(data.model_loaded))}</dd></dl>
+        </div>
+      </div></section>
+    `;
+  }
+
+  function showOutput(html) {
+    const out = $('output');
+    out.innerHTML = html;
+    const copyBtn = $('copyJsonBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pre = copyBtn.closest('details')?.querySelector('pre');
+        if (pre && navigator.clipboard) {
+          navigator.clipboard.writeText(pre.textContent).then(() => {
+            copyBtn.textContent = 'Copied';
+            setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+          });
+        }
+      });
+    }
+    out.scrollTop = 0;
+  }
+
+  function showError(msg, detail) {
+    const d = detail ? `<br><small style="opacity:0.85">${escapeHtml(detail)}</small>` : '';
+    showOutput(`<div class="error-box">${escapeHtml(msg)}${d}</div>`);
+  }
+
+  function setLoading(on, text) {
+    const el = $('loadingPanel');
+    $('loadingText').textContent = text || 'Sending request…';
+    el.classList.toggle('show', on);
+  }
+
+  function isCoordsMode() {
+    return $('tabCoords').getAttribute('aria-selected') === 'true';
+  }
+
+  $('tabCoords').addEventListener('click', () => {
+    $('tabCoords').setAttribute('aria-selected', 'true');
+    $('tabManual').setAttribute('aria-selected', 'false');
+    $('coordsMode').hidden = false;
+    $('manualMode').hidden = true;
+  });
+
+  $('tabManual').addEventListener('click', () => {
+    $('tabManual').setAttribute('aria-selected', 'true');
+    $('tabCoords').setAttribute('aria-selected', 'false');
+    $('coordsMode').hidden = true;
+    $('manualMode').hidden = false;
+  });
+
+  $('citySelect').addEventListener('change', () => {
+    const key = $('citySelect').value;
+    if (key && cities[key]) {
+      $('latitude').value = cities[key].lat;
+      $('longitude').value = cities[key].lon;
+    }
+  });
+
+  $('btnPredict').addEventListener('click', async () => {
+    const base = normalizeBase($('apiUrl').value);
+    let payload = {};
+    if (isCoordsMode()) {
+      const lat = parseFloat($('latitude').value);
+      const lon = parseFloat($('longitude').value);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        showError('Enter valid latitude and longitude.');
+        return;
+      }
+      payload = { lat, lon };
+    } else {
+      payload = {
+        features: {
+          temp: parseFloat($('temp').value),
+          humidity: parseFloat($('humidity').value),
+          wind_speed: parseFloat($('windSpeed').value),
+          pressure: parseFloat($('pressure').value),
+          clouds: parseFloat($('clouds').value),
+          uv_index: parseFloat($('uvIndex').value)
+        }
+      };
+      const f = payload.features;
+      if (Object.values(f).some((v) => !Number.isFinite(v))) {
+        showError('Fill all manual feature fields with numbers.');
+        return;
+      }
+    }
+
+    let url = `${base}/predict`;
+    if ($('explainToggle').checked) {
+      url += url.includes('?') ? '&explain=true' : '?explain=true';
+    }
+
+    setLoading(true, 'Calling POST /predict…');
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showError(data.error || `HTTP ${res.status}`, data.detail);
+        return;
+      }
+      showOutput(renderPredict(data));
+    } catch (err) {
+      showError('Network error', err.message);
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  $('btnHealth').addEventListener('click', async () => {
+    const base = normalizeBase($('apiUrl').value);
+    setLoading(true, 'GET /health…');
+    try {
+      const res = await fetch(`${base}/health`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showError(data.error || `HTTP ${res.status}`);
+        return;
+      }
+      showOutput(renderHealth({ ...data, message: 'API is reachable. Model bundle status below.' }));
+    } catch (err) {
+      showError('Network error', err.message);
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', populateCitySelect);
+  } else {
+    populateCitySelect();
+  }
+})();
+  </script>
+</body>
+</html>
